@@ -6,35 +6,79 @@ package com.mycompany.app;
  */
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
+import spark.ModelAndView;
+import spark.template.mustache.MustacheTemplateEngine;
+import static spark.Spark.*;
 
 public class App {
 
+    
     public static void main(String[] args) {
-        // Örnek kullanım
-        ArrayList<Integer> intArray1 = new ArrayList<>();
-        intArray1.add(1);
-        intArray1.add(2);
-        intArray1.add(3);
+        port(getHerokuAssignedPort());
 
-        ArrayList<Integer> intArray2 = new ArrayList<>();
-        intArray2.add(4);
-        intArray2.add(5);
-        intArray2.add(6);
+        get("/", (req, res) -> "Hello, World");
 
-        ArrayList<String> stringArray = new ArrayList<>();
-        stringArray.add("aylin");
-        stringArray.add("AAA");
-        stringArray.add("000");
-        stringArray.add("aaa");
+        post("/compute", (req, res) -> {
+            // intArray1 ve intArray2 için input1
+            String input1 = req.queryParams("intArray1");
+            ArrayList<Integer> intArray1 = new ArrayList<>();
+            java.util.Scanner sc1 = new java.util.Scanner(input1);
+            sc1.useDelimiter("[,\\s]+");
+            while (sc1.hasNext()) {
+                int value = Integer.parseInt(sc1.next().trim());
+                intArray1.add(value);
+            }
+            sc1.close();
 
-        int value = 10;
+            // intArray2 için input2
+            String input2 = req.queryParams("intArray2");
+            ArrayList<Integer> intArray2 = new ArrayList<>();
+            java.util.Scanner sc2 = new java.util.Scanner(input2);
+            sc2.useDelimiter("[,\\s]+");
+            while (sc2.hasNext()) {
+                int value = Integer.parseInt(sc2.next().trim());
+                intArray2.add(value);
+            }
+            sc2.close();
 
-        App app = new App();
-        ArrayList result= app.Decoder(intArray1, intArray2, stringArray, value);
-        System.out.println("Result: " + result);
+            // stringArray için input
+            String input3 = req.queryParams("stringArray");
+            ArrayList<String> stringArray = new ArrayList<>();
+            java.util.Scanner sc3 = new java.util.Scanner(input3);
+            sc3.useDelimiter("[,\\s]+");
+            while (sc3.hasNext()) {
+                stringArray.add(sc3.next().trim());
+            }
+            sc3.close();
+
+            // value için input
+            int value = Integer.parseInt(req.queryParams("value"));
+
+            App app = new App();
+            ArrayList<String> result = app.Decoder(intArray1, intArray2, stringArray, value);
+
+            Map map = new HashMap();
+            map.put("result", result);
+            return new ModelAndView(map, "compute.mustache");
+        }, new MustacheTemplateEngine());
+
+        get("/compute", (req, res) -> {
+            Map map = new HashMap();
+            map.put("result", "not computed yet!");
+            return new ModelAndView(map, "compute.mustache");
+        }, new MustacheTemplateEngine());
     }
 
+    static int getHerokuAssignedPort() {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        if (processBuilder.environment().get("PORT") != null) {
+            return Integer.parseInt(processBuilder.environment().get("PORT"));
+        }
+        return 4567; // return default port if heroku-port isn't set (i.e. on localhost)
+    }
     public ArrayList Decoder(ArrayList<Integer> intArray1, ArrayList<Integer> intArray2, ArrayList<String> stringArray, int value) {
         int sum = 0;
 
